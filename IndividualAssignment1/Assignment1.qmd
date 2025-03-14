@@ -11,7 +11,7 @@ format:
     code-fold: true
 ---
 ## Introduction 
-For this Assignment I am using data about cyberattacks for this assignment that shows details about attack forms together with affected systems and targeted industries and data breach amounts. The researchers obtained the database from [Kaggle-CyberSecurityDataset](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset).
+For this Assignment try to pull I am using data about cyberattacks for this assignment that shows details about attack forms together with affected systems and targeted industries and data breach amounts. The researchers obtained the database from [Kaggle-CyberSecurityDataset](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset).
 
 This data set provides insights about how various industries and people get affected by cyberattacks particularly concerning data breaches risks. The analyzed data reveals the primary attacked industries as well as the attack methods used and their associated data security repercussions. Security breaches generate multiple severe consequences which include monetary loss together with damage to reputation as well as privacy violations toward people.
 
