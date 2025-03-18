@@ -11,7 +11,7 @@ format:
     code-fold: true
 ---
 ## Introduction 
-This assignment focuses on analyzing data related to cyberattacks and their effects on industries. The goal is to explore three datasets: Cyberattack Data, Compliance Data, and Data Breach Data.
+This assignmentfocuses on analyzing data related to cyberattacks and their effects on industries. The goal is to explore three datasets: Cyberattack Data, Compliance Data, and Data Breach Data.
 The aim is to combine these datasets to understand how industries are affected by cyberattacks and security controls effectiveness against breaches together with their resulting data losses. My research will offer guidance to businesses as well as policymakers for enhancing cybersecurity through integrated findings.
 
 #### Dataset 1: [Cyberattack Data](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset).
