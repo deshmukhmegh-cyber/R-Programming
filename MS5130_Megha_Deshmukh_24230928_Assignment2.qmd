@@ -11,7 +11,7 @@ format:
     code-fold: true
 ---
 ## Introduction 
-This assignmentfocuses on analyzing data related to cyberattacks and their effects on industries. The goal is to explore three datasets: Cyberattack Data, Compliance Data, and Data Breach Data.
+This assignment focuses on analyzing data related to cyberattacks and their effects on industries. The goal is to explore three datasets: Cyberattack Data, Compliance Data, and Data Breach Data.
 The aim is to combine these datasets to understand how industries are affected by cyberattacks and security controls effectiveness against breaches together with their resulting data losses. My research will offer guidance to businesses as well as policymakers for enhancing cybersecurity through integrated findings.
 
 #### Dataset 1: [Cyberattack Data](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset).
@@ -27,38 +27,18 @@ The dataset contains comprehensive information about recent data breaches which 
 ## Flow Digram using mermaid for cyber crime dataset
 
 ```{mermaid}
-graph TD
-    A[Start] --> B[Load Datasets & Libraries]
-    B --> C[Merge Attack & Breach Data]
-    B --> D[Merge Attack & Compliance Data]
-    B --> E[Merge Compliance & Breach Data]
-    C --> F[Analyze Attack Types & Breaches]
-    D --> G[Evaluate Compliance Impact on Attacks]
-    E --> H[Assess Security Controls vs. Breaches]
-    F -->|Bubble Chart| I[Attack Type vs. Affected Industries]
-    G -->|Bar Graph| J[Compliance Score vs. Attack Severity]
-    H -->|Pie Chart| K[Top Breach Causes]
-    I --> L[Generate Insights]
-    J --> L
-    K --> L
-    L --> M[End]
-    
-    %% Add custom colors
-    style A fill:#ffcccc,stroke:#ff0000,stroke-width:2px
-    style B fill:#ccffcc,stroke:#00cc00,stroke-width:2px
-    style C fill:#ffffcc,stroke:#cccc00,stroke-width:2px
-    style D fill:#ffccff,stroke:#cc00cc,stroke-width:2px
-    style E fill:#ccffff,stroke:#00cccc,stroke-width:2px
-    style F fill:#ffcc99,stroke:#ff6600,stroke-width:2px
-    style G fill:#99ccff,stroke:#0066cc,stroke-width:2px
-    style H fill:#ffff99,stroke:#cccc00,stroke-width:2px
-    style I fill:#ff99ff,stroke:#cc33cc,stroke-width:2px
-    style J fill:#ffcc33,stroke:#cc9900,stroke-width:2px
-    style K fill:#ff6666,stroke:#cc0000,stroke-width:2px
-    style L fill:#99ff99,stroke:#66cc66,stroke-width:2px
-    style M fill:#cccccc,stroke:#666666,stroke-width:2px
-
-
+  graph TD
+    A[Start] --> B[Load Dataset1 & Dataset3]
+    B --> C[Group Dataset3 by Industry & Attack Type]
+    C --> D[Summarize Total Affected Users]
+    D --> E[Filter Attack Types (Phishing, Malware, etc.)]
+    E --> F[Create Pie Chart: Total Affected Users by Industry]
+    B --> G[Combine Dataset1 & Dataset3]
+    G --> H[Summarize Attack Types & Severity]
+    H --> I[Create Bar Chart: Total Data Compromised by Attack Type & Industry]
+    I --> J[Generate Insights]
+    F --> J
+    J --> K[End]
 ```
 
 ## Loaded necessary libraries
@@ -70,110 +50,128 @@ library(dplyr)
 library(plotly)
 library(formattable)
 library(RColorBrewer)
+library(data.table)
+
+library(ggplot2)
+
+
 
 
 ```
 
-## Clean & Filter Data
-The original data displays only 2 rows.
-```{r wsetup1 ,message=FALSE,warning=FALSE}
-# Read dataset
-raw_data <- read.csv("/Users/meghadeshmukh/Desktop/R_Assignment/cybersecurity_large_synthesized_data.csv")
-formattable(head(raw_data, 2))
 
-#Selecting and renaming only the necessary columns for better understanding.
-cybersecurity_attacks <- raw_data %>%
-  select(attack_type, target_system, outcome, location, industry, mitigation_method, user_role, security_tools_used, data_compromised_GB)
+# Load necessary libraries
 
-cybersecurity_attacks <- cybersecurity_attacks %>%
+
+```{r datu ,message=FALSE,warning=FALSE}
+# Read only necessary columns
+file_path1 <- "/Users/meghadeshmukh/Desktop/R_Assignment/cybersecurity_large_synthesized_data.csv"
+file_path2 <-"/Users/meghadeshmukh/Desktop/R_Assignment/Global_Cybersecurity_Threats_2015-2024.csv"
+file_path3 <-"/Users/meghadeshmukh/Desktop/R_Assignment/Data_Breach_Notifications_Affecting_Washington_Residents__Personal_Information_Breakdown_.csv"
+  
+dataset1 <- fread(file_path1, select = c("attack_type", "industry", "attack_severity", "security_tools_used","data_compromised_GB","location","outcome"))
+
+dataset2 <- fread(file_path2, select = c("Attack Type","Defense Mechanism Used","Target Industry","Number of Affected Users", "Country" ))
+dataset2 <- dataset2 %>%
   rename(
-    status = outcome,
-    target_country = location,
-    response_action = mitigation_method
+    attack_type = "Attack Type",
+    defence_mechanism_used = "Defense Mechanism Used",
+    target_industry = "Target Industry"
   )
-```
 
-The selected_Coloumn from original data.
-```{r rsetup2 ,message=FALSE,warning=FALSE}
-formattable(head(cybersecurity_attacks, 1))
-```
+dataset3 <- fread(file_path3, select = c("CyberattackType","IndustryType","WashingtoniansAffected", "Year", "WashingtoniansAffectedRange", "BreachLifecycleRange", "EntityState","DateSubmitted","DateStart","DateEnd"))
+dataset3 <- dataset3 %>%
+  rename(
+    attack_type = "CyberattackType",
+    no_affected_user="WashingtoniansAffected"
+  )
 
-Filtered and cleaned data for 'NA' values (shows only first 10 rows)
-```{r sretup ,message=FALSE,warning=FALSE}
-cleaned_data <- cybersecurity_attacks %>%
-  drop_na(attack_type, target_system, status, target_country, industry, response_action, user_role, security_tools_used)
+filtered_dataset1 <- dataset1 %>%
+  filter(outcome == "Success"  & data_compromised_GB > 5) %>%
+  select(attack_type, industry, attack_severity,security_tools_used,data_compromised_GB,location)
 
-# Filter the data where the outcome is "Success" and the data compromised is greater than 5 GB, then select the 'industry' column.
-filtered_data <- cleaned_data %>%
-  filter(status == "Success"  & data_compromised_GB > 5) %>%
-  select(attack_type, target_system, target_country, industry, response_action, user_role, security_tools_used, data_compromised_GB )
 
-formattable(head(filtered_data, 10))
-```
-## Visualize Data
-```{r seatup22 ,message=FALSE,warning=FALSE}
-# Group by target_country and attack_type, then count occurrences
-country_attack <- filtered_data %>%
-  group_by(target_country, attack_type) %>%
+#merged_data <- merge(dataset1_clean, dataset2_clean, by = "attack_type")
+dataset1_dataset2 <- filtered_dataset1 %>%
+  inner_join(dataset2, by = "attack_type")
+head(dataset1_dataset2)
+
+
+
+country_attack <- dataset1_dataset2 %>%
+  group_by(target_industry, attack_type) %>%
   summarise(count = n())
+
 
 # A bubble graph was plotted using Plotly.
 plot_ly(country_attack, 
-        x = ~target_country, 
+        x = ~target_industry, 
         y = ~attack_type, 
         size = ~count, 
         color = ~attack_type, 
         type = 'scatter', 
         mode = 'markers', 
         hoverinfo = 'text',  
-        text = ~paste('Count: ', count),
+        text = ~paste('Count of attack type based on industry: ', count),
         marker = list(sizemode = 'diameter', opacity = 0.5)) %>%
   layout(title = "Attack Types by Country",
-         xaxis = list(title = "Country"),
-         yaxis = list(title = "Attack Types"))
+         xaxis = list(title = "Most Targeted Industries"),
+         yaxis = list(title = "Major Types of Attack happened"))
+
+attack_counts <- dataset1_dataset2 %>%
+  count(attack_type)
+
+
 
 ```
 
-```{r gsetup3 ,message=FALSE,warning=FALSE}
-# grouped the data by attack type and target system, counts the occurrences, and selects the first values for industry and target country.
-industry_attack <- filtered_data %>%
-  group_by(attack_type, target_system) %>%
-  summarise(count = n(), 
-            industry = first(industry),  
-            target_country = first(target_country))  
 
-# created a pie chart based on the industries with the most attacks
-plot_ly(industry_attack, 
-        labels = ~industry,  
-        values = ~count,  
-        type = 'pie',  
-        textinfo = 'label+percent',  
-        hoverinfo = 'text',
-        text = ~paste("Total Attacks: ", count),
-        marker = list(colors = RColorBrewer::brewer.pal(8, "Set3")),
-        pull = 0.05) %>%
-  layout(title = "Industries Based on Most Attacks")
+#dataset3 operations
+```{r rjsetup33 ,message=FALSE,warning=FALSE}
+# Grouping data by IndustryType and CyberattackType
+data_grouped <- dataset3 %>%
+  group_by(IndustryType, attack_type) %>%
+  summarise(total_affected = sum(no_affected_user), .groups = "drop")%>%
+  filter(!is.na(total_affected)) %>%
+  filter(attack_type %in% c("Phishing", "Malware", "Ransomware","Other"))
 
+plot_ly(data_grouped, 
+        labels = ~attack_type, 
+        values = ~total_affected, 
+        type = "pie", 
+        textinfo = "label+percent", 
+        hoverinfo = "label+value+percent",
+        marker = list(colorscale = 'Rainbow')) %>%
+  layout(title = "Total Affected Users by Industry")
 ```
 
-```{r rtsetup33 ,message=FALSE,warning=FALSE}
+
+# New trial
+
+```{r rnsetup33 ,message=FALSE,warning=FALSE}
 # Group by attack_type and industry, and sum the data compromised
-total_data_compromised <- filtered_data %>%
-  group_by(attack_type, industry) %>%
-  summarise(total_data = sum(data_compromised_GB))
+
+total_data_compromised <- dataset1_dataset2 %>%
+  group_by(attack_type, defence_mechanism_used) %>%
+  summarise(total_data = sum(attack_severity))
+
+head(total_data_compromised)
 
 plot_ly(total_data_compromised, 
         x = ~attack_type,           
         y = ~total_data,            
-        color = ~industry,          
+        color = ~defence_mechanism_used,          
         type = 'bar', 
-        text = ~paste('Industry: ', industry, '<br>Total Data Compromised: ', total_data, 'GB'),
+        text = ~paste('defence mechanism used: ', defence_mechanism_used, '<br>attack severity: ', total_data, 'GB'),
         hoverinfo = 'text') %>%
   layout(title = "Total Data Compromised by Attack Type and Industry",
          xaxis = list(title = "Attack Type"),
          yaxis = list(title = "Total Data Compromised (GB)"))
+
 ```
 
-## Insights and Conclusion
+
+
+
 
 
