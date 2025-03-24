@@ -17,28 +17,39 @@ The aim is to combine these datasets to understand how industries are affected b
 #### Dataset 1: [Cyberattack Data](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset).
 The dataset provides information about different types of cyberattacks together with the targeted systems' results after attacks. The database provides information about distinct cyberattack forms and industry targets with data loss measurement data.
 
-#### Dataset 2: [Data Breach and Control Data](https://catalog.data.gov/dataset/data-breach-notifications-affecting-washington-residents-personal-information-breakdown)
+#### Dataset 2: [global cybersecurity threats](https://www.kaggle.com/datasets/atharvasoundankar/global-cybersecurity-threats-2015-2024)
 The dataset examines security controls together with compliance measures that organizations implement for securing their operations. This database shows how well security controls operate through compliance scoring which aids organizations in defending themselves from cyber threats.
 
 #### Dataset 3: [Compliance Information](https://catalog.data.gov/dataset/5-12-cybersecurity-detail-d8bb7)
 The dataset contains comprehensive information about recent data breaches which shows their origins together with the business sectors they targeted and the number of people affected. The data show different breach types, breach lengths and which industries experience the greatest risk of lost data.
 
+#### GitHub Repository and Version Control [Git_Link](https://github.com/deshmukhmegh-cyber/R-Programming/tree/assignment1)
+The code has been uploaded to a private GitHub repository with meaningful commits over time. Assignment 1 is in the assignment1 branch, and Assignment 2 is in the feature-branch-assignment2 branch. A brief introductory note is included in the README.md file.
 
 ## Flow Digram using mermaid for cyber crime dataset
 
 ```{mermaid}
-  graph TD
-    A[Start] --> B[Load Dataset1 & Dataset3]
-    B --> C[Group Dataset3 by Industry & Attack Type]
-    C --> D[Summarize Total Affected Users]
-    D --> E[Filter Attack Types (Phishing, Malware, etc.)]
-    E --> F[Create Pie Chart: Total Affected Users by Industry]
-    B --> G[Combine Dataset1 & Dataset3]
-    G --> H[Summarize Attack Types & Severity]
-    H --> I[Create Bar Chart: Total Data Compromised by Attack Type & Industry]
-    I --> J[Generate Insights]
-    F --> J
-    J --> K[End]
+  graph TD;
+
+  A[Start] --> B[Load Libraries]
+  B --> C[Read and Clean Data]
+  C --> D[Filter & Select Columns]
+  D --> E[Merge Datasets]
+  E --> F[Perform Data Analysis]
+  F --> G[Build GLM & GAM Models]
+  G --> H[Visualize Data]
+  H --> I1[Plot Attack Severity]
+  H --> I2[Plot Industry Impact]
+  H --> I3[Bubble Chart of Attacks]
+  H --> I4[Bar Chart of Defense Mechanisms]
+  I1 --> J[Conclusion]
+  I2 --> J
+  I3 --> J
+  I4 --> J
+  J --> K[End]
+
+
+
 ```
 
 ## Loaded necessary libraries
@@ -51,19 +62,17 @@ library(plotly)
 library(formattable)
 library(RColorBrewer)
 library(data.table)
-
 library(ggplot2)
-
-
-
+library(mgcv) 
+library(parallel)
 
 ```
 
 
-# Load necessary libraries
+## Data Preparation and Cleaning for Cybersecurity Analysis
+This R code loads and examines three cyber security data sets. The first data set contains cyberattack information, such as attack type, industry, severity, and lost data, focused on successful attacks with high loss of data. The second data set consists of data for global cyber security threats, such as types of attacks, countermeasures, and affected industries. The third data set consists of Washington data breaches, such as types of attacks, industries, and number of affected users. Suitable columns are selected and renamed for similarity across datasets.
 
-
-```{r datu ,message=FALSE,warning=FALSE}
+```{r LoadFile ,message=FALSE,warning=FALSE}
 # Read only necessary columns
 file_path1 <- "/Users/meghadeshmukh/Desktop/R_Assignment/cybersecurity_large_synthesized_data.csv"
 file_path2 <-"/Users/meghadeshmukh/Desktop/R_Assignment/Global_Cybersecurity_Threats_2015-2024.csv"
@@ -89,46 +98,93 @@ dataset3 <- dataset3 %>%
 filtered_dataset1 <- dataset1 %>%
   filter(outcome == "Success"  & data_compromised_GB > 5) %>%
   select(attack_type, industry, attack_severity,security_tools_used,data_compromised_GB,location)
+```
 
+## Data Merging, Cleaning, and Modeling with GLM and GAM for Cybersecurity Analysis
+This code merges the filtered cybersecurity data from two datasets and cleans the data by transforming suitable columns to factors. A random 10% subset of the data is used for faster processing, and rows with missing values are removed. Next, a Generalized Linear Model (GLM) is employed to fit to explore the relationship between attack severity, attack type, and data breached. Further, a reduced Generalized Additive Model (GAM) is applied to further examine the data by removing non-significant predictors to enhance model fit. The result of both models is tabulated for interpretation.
 
-#merged_data <- merge(dataset1_clean, dataset2_clean, by = "attack_type")
+```{r Join ,message=FALSE,warning=FALSE}
+# Merge the datasets
 dataset1_dataset2 <- filtered_dataset1 %>%
   inner_join(dataset2, by = "attack_type")
-head(dataset1_dataset2)
 
+# Clean and prepare the data
+dataset_sample <- dataset1_dataset2 %>%
+  mutate(
+    target_industry = as.factor(target_industry),
+    defence_mechanism_used = as.factor(defence_mechanism_used),
+    attack_type = as.factor(attack_type)
+  )
 
+# Sample a smaller subset (e.g., 10% of the data) for faster computation
+set.seed(123)
+dataset_sample <- dataset1_dataset2 %>% sample_frac(0.1)  # 10% sample
 
-country_attack <- dataset1_dataset2 %>%
-  group_by(target_industry, attack_type) %>%
-  summarise(count = n())
+# Clean and prepare the data
+dataset_sample <- dataset_sample %>%
+  mutate(
+    target_industry = as.factor(target_industry),
+    defence_mechanism_used = as.factor(defence_mechanism_used),
+    attack_type = as.factor(attack_type)
+  )
 
+# Remove rows with NAs in important columns
+dataset_sample <- dataset_sample %>%
+  filter(!is.na(attack_severity) & !is.na(target_industry) & !is.na(defence_mechanism_used) & !is.na(attack_type))
+```
 
-# A bubble graph was plotted using Plotly.
-plot_ly(country_attack, 
-        x = ~target_industry, 
-        y = ~attack_type, 
-        size = ~count, 
-        color = ~attack_type, 
-        type = 'scatter', 
-        mode = 'markers', 
-        hoverinfo = 'text',  
-        text = ~paste('Count of attack type based on industry: ', count),
-        marker = list(sizemode = 'diameter', opacity = 0.5)) %>%
-  layout(title = "Attack Types by Country",
-         xaxis = list(title = "Most Targeted Industries"),
-         yaxis = list(title = "Major Types of Attack happened"))
-
-attack_counts <- dataset1_dataset2 %>%
-  count(attack_type)
-
-
+## summary output for GLM Model
+```{r GLM ,message=FALSE,warning=FALSE}
+# Fit the GLM model (removing non-significant predictors)
+glm_model <- glm(attack_severity ~ attack_type + data_compromised_GB, 
+                 data = dataset_sample, 
+                 family = gaussian())  # Used Gaussian for continuous data
+summary(glm_model)
+```
+## summary output for GAM Model
+```{r GAM ,message=FALSE,warning=FALSE}
+# Fit the simplified GAM model (removing non-significant smooth terms)
+gam_model_simple <- gam(attack_severity ~ s(attack_type, bs = "re", k = 3) + 
+                                   s(data_compromised_GB, k = 3), 
+                 data = dataset_sample, 
+                 family = gaussian())
+summary(gam_model_simple)  
 
 ```
 
+## Visualizing the Impact of Cyberattacks by Industry and Defense Mechanisms
+This part visually represents the relationship between types of cyberattacks, their severity, and most affected industries. A boxplot shows the distribution of severity by attack type, and a bubble chart shows the number of attacks by industry. A pie chart shows the number of users affected by various types of cyberattacks, such as phishing, malware, and ransomware, by industry. Last, a bar chart is used to compare defense methods' performance by visualizing the total data compromised versus different types of attack techniques and their respective defense mechanisms. They can be utilized to identify patterns in cyberattacks and their effects.
+```{r Visualize ,message=FALSE,warning=FALSE}
 
-#dataset3 operations
-```{r rjsetup33 ,message=FALSE,warning=FALSE}
-# Grouping data by IndustryType and CyberattackType
+# Ploted boxplot chart for distribution of Attack Severity by Attack Type
+ggplot(dataset1_dataset2, aes(x = attack_type, y = attack_severity, fill = attack_type)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Distribution of Attack Severity by Attack Type", x = "Attack Type", y = "Attack Severity") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Create the bubble chart by Groupping the data by target industry and attack type to get the count
+country_attack <- dataset1_dataset2 %>%
+  group_by(target_industry, attack_type) %>%
+  summarise(count = n(), .groups = "drop")
+
+plot_ly(country_attack,
+        x = ~target_industry,
+        y = ~attack_type,
+        size = ~count,
+        color = ~attack_type,
+        type = 'scatter',
+        mode = 'markers',
+        hoverinfo = 'text',
+        text = ~paste('Attack type: ', attack_type, '<br>Count: ', count),
+        marker = list(sizemode = 'diameter', opacity = 0.5)) %>%
+  layout(title = "Attack Type by Industry",
+         xaxis = list(title = "Most Targeted Industries"),
+         yaxis = list(title = "Major Types of Attack"),
+         showlegend = FALSE)
+
+
+# Plotted pie chart by grouping data to find affected users by IndustryType and CyberattackType
 data_grouped <- dataset3 %>%
   group_by(IndustryType, attack_type) %>%
   summarise(total_affected = sum(no_affected_user), .groups = "drop")%>%
@@ -143,35 +199,26 @@ plot_ly(data_grouped,
         hoverinfo = "label+value+percent",
         marker = list(colorscale = 'Rainbow')) %>%
   layout(title = "Total Affected Users by Industry")
-```
 
 
-# New trial
-
-```{r rnsetup33 ,message=FALSE,warning=FALSE}
-# Group by attack_type and industry, and sum the data compromised
-
-total_data_compromised <- dataset1_dataset2 %>%
+# Plotted Bar graph by summerizing total Data Compromised by Attack Type and Defense Mechanism used
+Impactful_defence_mechanisum <- dataset1_dataset2 %>%
   group_by(attack_type, defence_mechanism_used) %>%
-  summarise(total_data = sum(attack_severity))
+  summarise(total_data = sum(data_compromised_GB), .groups = 'drop')
 
-head(total_data_compromised)
-
-plot_ly(total_data_compromised, 
-        x = ~attack_type,           
-        y = ~total_data,            
-        color = ~defence_mechanism_used,          
-        type = 'bar', 
-        text = ~paste('defence mechanism used: ', defence_mechanism_used, '<br>attack severity: ', total_data, 'GB'),
+plot_ly(Impactful_defence_mechanisum,
+        x = ~attack_type,
+        y = ~total_data,
+        color = ~defence_mechanism_used,
+        type = 'bar',
+        text = ~paste('Defense Mechanism: ', defence_mechanism_used, '<br>Data Compromised: ', total_data, 'GB'),
         hoverinfo = 'text') %>%
-  layout(title = "Total Data Compromised by Attack Type and Industry",
+  layout(title = "Total Data Compromised by Attack Type and Defense Mechanism used",
          xaxis = list(title = "Attack Type"),
          yaxis = list(title = "Total Data Compromised (GB)"))
 
 ```
 
+## Insights and Conclusion
 
-
-
-
-
+The analysis focuses on critical insights about cyberattacks, industry effects, and defensive actions. The finance and healthcare industries are the most impacted by cyberattacks, in which "Phishing" and "Ransomware" are the most damaging. Effective defense actions, such as multi-factor authentication, reduce data loss. GLM and GAM models reveal that the amount of affected data is the main driver of attack severity. Overall, industries need to strengthen cybersecurity controls, focusing on the most widespread threats, while policymakers should enforce stricter compliance to avert attacks in the future.
