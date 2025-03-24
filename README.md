@@ -10,8 +10,8 @@ This repository contains the work for **Assignment 2** of the Cybersecurity Data
 ## Datasets
 
 Three key datasets are used in the analysis:
-
-1. **[Cyberattack Data]**:(https://github.com](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset)
+[Cyberattack Data](https://github.com](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset)
+1. [Cyberattack Data](https://github.com](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset)
  Information about different types of cyberattacks and their impact on industries, including attack severity, attack types, and data compromised.
 2. **[Global Cybersecurity Threats Data]**:(https://www.kaggle.com/datasets/atharvasoundankar/global-cybersecurity-threats-2015-2024) Data on global cybersecurity threats, including defense mechanisms and the number of affected users.
 3. **[Data Breach Data]**: (https://catalog.data.gov/dataset/5-12-cybersecurity-detail-d8bb7) Information about recent data breaches, including the attack type, industry type, and number of affected users.
