@@ -1,0 +1,153 @@
+---
+title: "Individual Assignment 1"
+author: "Megha Deshmukh 24230928"
+format: 
+  html: 
+    embed-resources: true
+    toc: true
+    theme: flatly
+    toc-depth: 2
+    toc-title: "Contents"
+    code-fold: true
+---
+## Introduction
+For this Assignment I am using data about cyberattacks for this assignment that shows details about attack forms together with affected systems and targeted industries and data breach amounts. The researchers obtained the database from [Kaggle-CyberSecurityDataset](https://www.kaggle.com/datasets/shakirul09/cyber-crimes-dataset).
+
+This data set provides insights about how various industries and people get affected by cyberattacks particularly concerning data breaches risks. The analyzed data reveals the primary attacked industries as well as the attack methods used and their associated data security repercussions. Security breaches generate multiple severe consequences which include monetary loss together with damage to reputation as well as privacy violations toward people.
+
+Through analysis of business data companies verify weaknesses in security infrastructure and policymakers along with businesses can base decisions on risk reduction. The analysis helps organizations develop more effective defensive measures while enabling people to recognize potential dangers that affect their private information. The analysis shows that data systems provide solutions to concrete problems which impact organizations and governmental structures while shaping social evolution.
+
+
+## Flow Digram using mermaid
+
+```{mermaid}
+graph TD
+    A[Start] --> B[Load Data & Libraries]
+    B --> C[Clean & Filter Data]
+    C --> E[Visualize Data]
+    E -->|Bubble Chart| F[Attack Types by Country]
+    E -->|Pie Graph| G[Industry-Specific Threats]
+    E -->|Bar Graph| H[Compromised by Attack Type]
+    F --> I[Insights and Conclusion]
+    G --> I
+    H --> I
+    I --> J[End]
+
+```
+
+## Loaded necessary libraries
+
+```{r setup ,message=FALSE,warning=FALSE}
+
+library(tidyverse)
+library(dplyr)
+library(plotly)
+library(formattable)
+library(RColorBrewer)
+
+
+```
+
+## Clean & Filter Data
+The original data displays only 2 rows.
+```{r wsetup1 ,message=FALSE,warning=FALSE}
+# Read dataset
+raw_data <- read.csv("/Users/meghadeshmukh/Desktop/R_Assignment/cybersecurity_large_synthesized_data.csv")
+formattable(head(raw_data, 2))
+
+#Selecting and renaming only the necessary columns for better understanding.
+cybersecurity_attacks <- raw_data %>%
+  select(attack_type, target_system, outcome, location, industry, mitigation_method, user_role, security_tools_used, data_compromised_GB)
+
+cybersecurity_attacks <- cybersecurity_attacks %>%
+  rename(
+    status = outcome,
+    target_country = location,
+    response_action = mitigation_method
+  )
+```
+
+The selected_Coloumn from original data.
+```{r rsetup2 ,message=FALSE,warning=FALSE}
+formattable(head(cybersecurity_attacks, 1))
+```
+
+Filtered and cleaned data for 'NA' values (shows only first 10 rows)
+```{r sretup ,message=FALSE,warning=FALSE}
+cleaned_data <- cybersecurity_attacks %>%
+  drop_na(attack_type, target_system, status, target_country, industry, response_action, user_role, security_tools_used)
+
+# Filter the data where the outcome is "Success" and the data compromised is greater than 5 GB, then select the 'industry' column.
+filtered_data <- cleaned_data %>%
+  filter(status == "Success"  & data_compromised_GB > 5) %>%
+  select(attack_type, target_system, target_country, industry, response_action, user_role, security_tools_used, data_compromised_GB )
+
+formattable(head(filtered_data, 10))
+```
+## Visualize Data
+```{r seatup22 ,message=FALSE,warning=FALSE}
+# Group by target_country and attack_type, then count occurrences
+country_attack <- filtered_data %>%
+  group_by(target_country, attack_type) %>%
+  summarise(count = n())
+
+# A bubble graph was plotted using Plotly.
+plot_ly(country_attack, 
+        x = ~target_country, 
+        y = ~attack_type, 
+        size = ~count, 
+        color = ~attack_type, 
+        type = 'scatter', 
+        mode = 'markers', 
+        hoverinfo = 'text',  
+        text = ~paste('Count: ', count),
+        marker = list(sizemode = 'diameter', opacity = 0.5)) %>%
+  layout(title = "Attack Types by Country",
+         xaxis = list(title = "Country"),
+         yaxis = list(title = "Attack Types"))
+
+```
+
+```{r gsetup3 ,message=FALSE,warning=FALSE}
+# grouped the data by attack type and target system, counts the occurrences, and selects the first values for industry and target country.
+industry_attack <- filtered_data %>%
+  group_by(attack_type, target_system) %>%
+  summarise(count = n(), 
+            industry = first(industry),  
+            target_country = first(target_country))  
+
+# created a pie chart based on the industries with the most attacks
+plot_ly(industry_attack, 
+        labels = ~industry,  
+        values = ~count,  
+        type = 'pie',  
+        textinfo = 'label+percent',  
+        hoverinfo = 'text',
+        text = ~paste("Total Attacks: ", count),
+        marker = list(colors = RColorBrewer::brewer.pal(8, "Set3")),
+        pull = 0.05) %>%
+  layout(title = "Industries Based on Most Attacks")
+
+```
+
+```{r rtsetup33 ,message=FALSE,warning=FALSE}
+# Group by attack_type and industry, and sum the data compromised
+total_data_compromised <- filtered_data %>%
+  group_by(attack_type, industry) %>%
+  summarise(total_data = sum(data_compromised_GB))
+
+plot_ly(total_data_compromised, 
+        x = ~attack_type,           
+        y = ~total_data,            
+        color = ~industry,          
+        type = 'bar', 
+        text = ~paste('Industry: ', industry, '<br>Total Data Compromised: ', total_data, 'GB'),
+        hoverinfo = 'text') %>%
+  layout(title = "Total Data Compromised by Attack Type and Industry",
+         xaxis = list(title = "Attack Type"),
+         yaxis = list(title = "Total Data Compromised (GB)"))
+```
+
+## Insights and Conclusion
+
+This assignment analyzed a cybersecurity attacks dataset to explore and visualize different attack types. The full data cleaning process gave us the ability to create both bar charts and pie charts which displayed the attack type frequencies. The analysis showed that DDoS and Intrusion attacks were the most prevalent while giving details about malware indicators. The analytical results contain information that produces important benefits for enhancing cybersecurity methods. Moving forward, advanced techniques like anomaly detection can be applied for deeper insights into attack patterns.
